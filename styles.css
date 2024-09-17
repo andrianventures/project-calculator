@@ -1,0 +1,86 @@
+/* General body styling */
+body {
+    background-color: #e6e6fa; /* Light purple background */
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+}
+
+/* Calculator container */
+.calculator {
+    background-color: black;
+    border: 5px solid black;
+    border-radius: 15px;
+    box-shadow: 10px 10px 20px rgba(0, 0, 0, 0.5); /* 3D effect with shadow */
+    width: 300px;
+    padding: 20px;
+    margin-top: 70px;
+}
+
+/* Display section */
+.display {
+    background-color: #333;
+    color: white;
+    font-size: 2em;
+    padding: 15px;
+    text-align: right;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: inset 5px 5px 10px rgba(0, 0, 0, 0.7);
+}
+
+/* Button container */
+.buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+/* Button styles */
+.btn {
+    font-size: 1.5em;
+    padding: 20px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 3px 3px 7px rgba(0, 0, 0, 0.5);
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+/* Button hover effect */
+.btn:hover {
+    transform: scale(1.05);
+}
+
+/* Number buttons */
+.btn.number {
+    background-color: #ffcc00; /* Bright yellow */
+    color: black;
+}
+
+/* Operator buttons */
+.btn.operator {
+    background-color: #ff6666; /* Bright red */
+    color: white;
+}
+
+/* Function buttons (clear, backspace, etc.) */
+.btn.function {
+    background-color: #66ccff; /* Bright blue */
+    color: white;
+}
+
+/* Equals button */
+#equals {
+    grid-column: span 2; /* Span two columns for the equals button */
+    background-color: #00cc99; /* Bright green */
+    color: white;
+}
+
+/* Zero button */
+#zero {
+    grid-column: span 1; /* Span one column for the zero button */
+}
