@@ -84,3 +84,11 @@ body {
 #zero {
     grid-column: span 1; /* Span one column for the zero button */
 }
+
+/* Button click effect */
+.btn:active {
+    transform: scale(1.1); /* Slightly increase the size for a "popping" effect */
+    filter: brightness(1.4); /* Make the button brighter */
+    box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.7); /* Add a glowing effect */
+    border: 2px solid white; /* Briefly add a white border */
+}
