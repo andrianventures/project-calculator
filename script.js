@@ -1,5 +1,5 @@
-let displayValue = ''; // Variable to store the display value
-const display = document.getElementById('display'); // Get the display element
+let displayValue = '0';  // Initialize the display value as '0'
+const display = document.getElementById('display');  // Get the display element
 let firstNumber = null;  // Stores the first number input
 let secondNumber = null;  // Stores the second number input
 let currentOperator = null;  // Stores the selected operator
@@ -22,131 +22,151 @@ function divide(num1, num2) {
     if (num2 !== 0) {
         return num1 / num2;
     } else {
-        return 'MAGA';  // Error message for division by zero
+        return 'ERROR';  // Error message for division by zero
     }
-}
-
-function percent(num1) {
-    return num1 / 100;
 }
 
 function operate(operator, num1, num2) {
+    let result;
     switch (operator) {
         case '+':
-            return add(num1, num2);
+            result = add(num1, num2);
+            break;
         case '-':
-            return subtract(num1, num2);
+            result = subtract(num1, num2);
+            break;
         case '*':
-            return multiply(num1, num2);
+            result = multiply(num1, num2);
+            break;
         case '/':
-            return divide(num1, num2);
+            result = divide(num1, num2);
+            break;
         default:
             return 'ERROR';
     }
+    return roundResult(result);  // Ensure result is rounded
 }
 
-// Function to update the display when a number button is clicked
+// Update display when a number is clicked
 function updateDisplay(value) {
     if (isSecondNumber) {
-        displayValue = '';  // Clear display when starting the second number
-        isSecondNumber = false;
+        displayValue = value;  // Start the second number input
+        isSecondNumber = false;  // Reset flag
+    } else {
+        displayValue = displayValue === '0' ? value : displayValue + value;  // Handle number input
     }
-    displayValue += value;  // Append clicked number
-    display.textContent = displayValue;  // Update display text
+    display.textContent = displayValue;  // Update display
 }
 
-// Function to handle when an operator is clicked
+// Function to handle operator click
 function handleOperator(operator) {
     if (firstNumber === null) {
-        firstNumber = parseFloat(displayValue);  // Store the first number
+        firstNumber = parseFloat(displayValue);
     } else if (currentOperator) {
-        secondNumber = parseFloat(displayValue);  // Store the second number
-        const result = operate(currentOperator, firstNumber, secondNumber);  // Perform operation
-        displayValue = result.toString();  // Convert result to string for display
-        display.textContent = displayValue;  // Update display with result
-        firstNumber = result;  // Store the result as the first number for further operations
+        secondNumber = parseFloat(displayValue);
+        const result = operate(currentOperator, firstNumber, secondNumber);
+        displayValue = result.toString();
+        display.textContent = displayValue;
+        firstNumber = result;  // Set result as first number for the next calculation
     }
-    currentOperator = operator;  // Store the selected operator
-    isSecondNumber = true;  // Now we start entering the second number
+    currentOperator = operator;
+    isSecondNumber = true;
 }
 
-// Function to handle when the "=" button is clicked
+// Function to handle equals button click
 function handleEquals() {
     if (firstNumber !== null && currentOperator !== null) {
-        secondNumber = parseFloat(displayValue);  // Store the second number
-        const result = operate(currentOperator, firstNumber, secondNumber);  // Perform operation
-        displayValue = result.toString();  // Convert result to string for display
-        display.textContent = displayValue;  // Update display with result
-        firstNumber = result;  // Store the result for further operations
-        currentOperator = null;  // Reset the operator
-        isSecondNumber = true;  // Reset the flag for the next input
+        secondNumber = parseFloat(displayValue);
+        let result = operate(currentOperator, firstNumber, secondNumber);
+        result = handleOverflow(result);  // Check for overflow
+        displayValue = result.toString();  // Show the result
+        display.textContent = displayValue;
+        firstNumber = result;  // Store result as firstNumber
+        currentOperator = null;  // Clear operator
+        isSecondNumber = false;
     }
 }
 
-// Function to clear everything
+// Clear the display and reset all values
 function clearDisplay() {
-    displayValue = '';  // Reset display value
-    firstNumber = null;  // Clear first number
-    secondNumber = null;  // Clear second number
-    currentOperator = null;  // Clear operator
-    display.textContent = '0';  // Reset display to default
-    isSecondNumber = false;  // Reset input flag
+    displayValue = '0';
+    firstNumber = null;
+    secondNumber = null;
+    currentOperator = null;
+    display.textContent = '0';
+    isSecondNumber = false;
 }
 
-// Adding event listeners to the number buttons
-const numberButtons = document.querySelectorAll('.number');
-numberButtons.forEach(button => {
-    button.addEventListener('click', (e) => {
-        updateDisplay(e.target.textContent);  // Update display with clicked number
-    });
-});
-
-// Adding event listeners to the operator buttons
-const operatorButtons = document.querySelectorAll('.operator');
-operatorButtons.forEach(button => {
-    button.addEventListener('click', (e) => {
-        handleOperator(e.target.textContent);  // Handle operator input
-    });
-});
-
-// Adding event listener to the equals button
-const equalsButton = document.getElementById('equals');
-equalsButton.addEventListener('click', handleEquals);
-
-// Adding event listener to the clear button
-const clearButton = document.getElementById('clear');
-clearButton.addEventListener('click', clearDisplay);
-
-// Function to handle backspace
+// Updated backspace function
 function handleBackspace() {
-    displayValue = displayValue.slice(0, -1); // Remove last digit
-    if (displayValue === '') displayValue = '0'; // Default to '0' if empty
+    displayValue = displayValue.slice(0, -1);
+    if (displayValue === '' || displayValue === '-') {
+        displayValue = '0';
+    }
+    firstNumber = parseFloat(displayValue);  // Update firstNumber
     display.textContent = displayValue;
 }
-
-// Adding event listener to the backspace button
-const backspaceButton = document.getElementById('backspace');
-backspaceButton.addEventListener('click', handleBackspace);
 
 // Function to handle percent
 function handlePercent() {
-    displayValue = (parseFloat(displayValue) / 100).toString(); // Divide by 100
-    display.textContent = displayValue;
+    if (displayValue !== '0' && !isNaN(parseFloat(displayValue))) {
+        // Divide the current display value by 100
+        displayValue = (parseFloat(displayValue) / 100).toString();
+        firstNumber = parseFloat(displayValue);  // Update firstNumber to the new result
+        display.textContent = displayValue;  // Update the display
+        currentOperator = null;  // Reset operator for new operations
+        isSecondNumber = false;  // Make sure we can continue entering new numbers
+    }
 }
 
-// Adding event listener to the percent button
-const percentButton = document.getElementById('percent');
-percentButton.addEventListener('click', handlePercent);
-
-// Function to handle the decimal point
+// Function to handle decimal input
 function handleDot() {
-    if (!displayValue.includes('.')) { // Only allow one dot
+    if (!displayValue.includes('.')) {
         displayValue += '.';
         display.textContent = displayValue;
     }
 }
 
-// Adding event listener to the dot button
-const dotButton = document.getElementById('dot');
-dotButton.addEventListener('click', handleDot);
+// Rounds the result to 10 decimal places if needed
+function roundResult(result) {
+    if (typeof result === 'number' && !Number.isInteger(result)) {
+        return parseFloat(result.toFixed(10));
+    }
+    return result;
+}
 
+// Handles overflow for large results
+function handleOverflow(result) {
+    if (result.toString().length > 10) {
+        return 'E';  // Return overflow message for large numbers
+    }
+    return result;
+}
+
+// Event listeners for buttons
+const numberButtons = document.querySelectorAll('.number');
+numberButtons.forEach(button => {
+    button.addEventListener('click', (e) => {
+        updateDisplay(e.target.textContent);
+    });
+});
+
+const operatorButtons = document.querySelectorAll('.operator');
+operatorButtons.forEach(button => {
+    button.addEventListener('click', (e) => {
+        let operator = e.target.textContent;
+        if (operator === '÷') operator = '/';
+        if (operator === '×') operator = '*';
+        handleOperator(operator);
+    });
+});
+
+document.getElementById('equals').addEventListener('click', handleEquals);
+document.getElementById('clear').addEventListener('click', clearDisplay);
+document.getElementById('backspace').addEventListener('click', handleBackspace);
+document.getElementById('percent').addEventListener('click', handlePercent);
+document.getElementById('decimal').addEventListener('click', handleDot);
+
+window.onload = () => {
+    display.textContent = '0';
+};
