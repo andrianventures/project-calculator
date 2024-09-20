@@ -4,6 +4,13 @@ let firstNumber = null;  // Stores the first number input
 let secondNumber = null;  // Stores the second number input
 let currentOperator = null;  // Stores the selected operator
 let isSecondNumber = false;  // Tracks if we're entering the second number
+let isNewCalculation = false;  // Flag to indicate start of a new calculation after pressing '='
+
+let lastOperator = null;  // Store the last operator for repeated equals
+let lastSecondNumber = null;  // Store the last second number for repeated equals
+
+let equalsPressed = false;  // Track if equals was pressed
+
 
 // Math functions
 function add(num1, num2) {
@@ -47,19 +54,39 @@ function operate(operator, num1, num2) {
     return roundResult(result);  // Ensure result is rounded
 }
 
-// Update display when a number is clicked
+// Function to update the display when a number is clicked
 function updateDisplay(value) {
-    if (isSecondNumber) {
+    if (equalsPressed) {
+        // If equals was pressed, start a new calculation
+        displayValue = value;  // Reset display for the new number
+        firstNumber = null;  // Clear the stored firstNumber
+        lastOperator = null;  // Clear the last operator
+        lastSecondNumber = null;  // Clear the last second number
+        equalsPressed = false;  // Reset the equals pressed flag
+    } 
+        else if (isSecondNumber) {
         displayValue = value;  // Start the second number input
         isSecondNumber = false;  // Reset flag
     } else {
         displayValue = displayValue === '0' ? value : displayValue + value;  // Handle number input
     }
+
+    // If the display exceeds 15 characters, limit it
+    if (displayValue.length > 15) {
+        displayValue = displayValue.slice(0, 15);  // Limit display to 15 characters
+    }
+
     display.textContent = displayValue;  // Update display
 }
 
-// Function to handle operator click
 function handleOperator(operator) {
+    // If "-" is pressed first, start with a negative number
+    if (operator === '-' && firstNumber === null && displayValue === '0') {
+        displayValue = '-';  // Start entering a negative number
+        display.textContent = displayValue;
+        return;  // Exit early, no need to store operator yet
+    }
+
     if (firstNumber === null) {
         firstNumber = parseFloat(displayValue);
     } else if (currentOperator) {
@@ -75,15 +102,28 @@ function handleOperator(operator) {
 
 // Function to handle equals button click
 function handleEquals() {
-    if (firstNumber !== null && currentOperator !== null) {
-        secondNumber = parseFloat(displayValue);
-        let result = operate(currentOperator, firstNumber, secondNumber);
-        result = handleOverflow(result);  // Check for overflow
-        displayValue = result.toString();  // Show the result
-        display.textContent = displayValue;
-        firstNumber = result;  // Store result as firstNumber
-        currentOperator = null;  // Clear operator
-        isSecondNumber = false;
+    if (firstNumber !== null) {
+        if (currentOperator !== null) {
+            // Perform calculation if an operator is present
+            secondNumber = parseFloat(displayValue);  // Store the second number
+            lastSecondNumber = secondNumber;  // Store this for repeated equals
+            lastOperator = currentOperator;  // Store the operator for repeated equals
+            let result = operate(currentOperator, firstNumber, secondNumber);  // Perform the calculation
+            result = handleOverflow(result);  // Handle overflow or rounding
+            displayValue = result.toString();  // Update the display
+            display.textContent = displayValue;
+            firstNumber = parseFloat(displayValue);  // Store the result as firstNumber for future calculations
+            currentOperator = null;  // Clear the operator
+        } else if (lastOperator !== null && lastSecondNumber !== null) {
+            // If no current operator but repeated equals is pressed, repeat the last operation
+            let result = operate(lastOperator, firstNumber, lastSecondNumber);  // Repeat the last operation
+            result = handleOverflow(result);  // Handle overflow or rounding
+            displayValue = result.toString();  // Update the display
+            display.textContent = displayValue;
+            firstNumber = parseFloat(displayValue);  // Store the result as firstNumber
+        }
+        equalsPressed = true;  // Set the flag to indicate equals was pressed
+        isSecondNumber = true;  // Set flag to allow new number entry
     }
 }
 
@@ -95,6 +135,7 @@ function clearDisplay() {
     currentOperator = null;
     display.textContent = '0';
     isSecondNumber = false;
+    isNewCalculation = false;
 }
 
 // Updated backspace function
@@ -103,15 +144,16 @@ function handleBackspace() {
     if (displayValue === '' || displayValue === '-') {
         displayValue = '0';
     }
-    firstNumber = parseFloat(displayValue);  // Update firstNumber
+    if (currentOperator === null) {
+        firstNumber = parseFloat(displayValue);  // Update firstNumber only when no operator
+    }
     display.textContent = displayValue;
 }
 
-// Function to handle percent
 function handlePercent() {
     if (displayValue !== '0' && !isNaN(parseFloat(displayValue))) {
-        // Divide the current display value by 100
-        displayValue = (parseFloat(displayValue) / 100).toString();
+        // Divide the current display value by 100 and round to avoid floating-point issues
+        displayValue = roundResult(parseFloat(displayValue) / 100).toString();
         firstNumber = parseFloat(displayValue);  // Update firstNumber to the new result
         display.textContent = displayValue;  // Update the display
         currentOperator = null;  // Reset operator for new operations
@@ -119,28 +161,50 @@ function handlePercent() {
     }
 }
 
-// Function to handle decimal input
-function handleDot() {
-    if (!displayValue.includes('.')) {
-        displayValue += '.';
-        display.textContent = displayValue;
-    }
-}
-
-// Rounds the result to 10 decimal places if needed
+// Adjust the roundResult function to round more effectively
 function roundResult(result) {
-    if (typeof result === 'number' && !Number.isInteger(result)) {
-        return parseFloat(result.toFixed(10));
-    }
-    return result;
+    return Math.round(result * 10000000000) / 10000000000;  // Round to 10 decimal places
 }
 
-// Handles overflow for large results
-function handleOverflow(result) {
-    if (result.toString().length > 10) {
-        return 'E';  // Return overflow message for large numbers
+
+// Function to handle the decimal point
+function handleDot() {
+    // If starting a new number after calculation, reset display for decimals
+    if (isSecondNumber || isNewCalculation) {
+        displayValue = '';  // Clear the display for the new number
+        isSecondNumber = false;  // Reset flag
+        isNewCalculation = false;  // Reset flag
     }
-    return result;
+
+    // If the display is empty or currently showing '0', append '0.' instead of just '.'
+    if (displayValue === '' || displayValue === '0') {
+        displayValue = '0.';
+    } else if (!displayValue.includes('.')) {
+        displayValue += '.';  // Append the dot
+    }
+
+    display.textContent = displayValue;  // Update the display
+}
+
+// Rounds the result or converts to scientific notation if overflow
+function handleOverflow(result) {
+    const resultStr = result.toString();
+    
+    // Check if the number exceeds 15 characters
+    if (resultStr.length > 15) {
+        // Handle scientific notation for large numbers
+        const scientific = result.toExponential(); // Convert to exponential form
+        const [mantissa, exponent] = scientific.split('e'); // Split at 'e'
+        return `${mantissa[0]}e+${(exponent.replace('+', ''))}`;  // Return in 'xey' format
+    }
+
+    // If result has decimal places, limit it to fit 15 digits
+    if (!Number.isInteger(result)) {
+        const roundedResult = parseFloat(result.toPrecision(15));  // Round to fit 15 digits total
+        return roundedResult.toString();
+    }
+
+    return resultStr;  // Return the original result if no overflow
 }
 
 // Event listeners for buttons
@@ -168,5 +232,39 @@ document.getElementById('percent').addEventListener('click', handlePercent);
 document.getElementById('decimal').addEventListener('click', handleDot);
 
 window.onload = () => {
-    display.textContent = '0';
+    clearDisplay();  // Reset everything on page load
 };
+
+// Add event listener for keyboard inputs
+window.addEventListener('keydown', handleKeyboardInput);
+
+function handleKeyboardInput(e) {
+    const key = e.key;  // Get the key pressed
+
+    // Check if it's a number key (0-9) or decimal point
+    if (/[0-9]/.test(key)) {
+        updateDisplay(key);
+    } else if (key === '.') {
+        handleDot();
+    } else if (key === '+') {
+        handleOperator('+');
+    } else if (key === '-') {
+        handleOperator('-');
+    } else if (key === '*') {
+        handleOperator('*');
+    } else if (key === '/') {
+        handleOperator('/');
+    } else if (key === '%') {
+        handlePercent();
+    } else if (key === 'Backspace') {
+        handleBackspace();
+    } else if (key === 'Enter' || key === '=') {
+        e.preventDefault();  // Prevent form submission on 'Enter'
+        handleEquals();
+    } else if (key === 'Escape' || key === 'Clear') {
+        clearDisplay();
+    } else {
+        // Ignore any other key press
+        return;
+    }
+}
